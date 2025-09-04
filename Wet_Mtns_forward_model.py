@@ -7,10 +7,11 @@ This is a temporary script file.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from landlab.components import LinearDiffuser, FlowAccumulator, FastscapeEroder, DepressionFinderAndRouter
+from landlab.components import LinearDiffuser, FlowAccumulator, FastscapeEroder, DepressionFinderAndRouter, SinkFiller
 from landlab import RasterModelGrid, imshow_grid
 from landlab.io import esri_ascii
 from os import chdir
+import time
 
 """
 This code was started on August 26, 2025.
@@ -30,12 +31,15 @@ v 7. Make code for power law line to figure out m, n, and Ks (and refresh memory
 
 """
 
+start_time = time.time()
 ##instantiate grid
 
-with open("basins_wets_30mbigclip.asc") as fp:
+with open("Wets_30m_fill_basin2study2.asc") as fp:
     mg = esri_ascii.load(fp, name = "topographic__elevation", at = "node")
 z = mg.field_values('topographic__elevation')
-mg.set_watershed_boundary_condition(z, -9999)
+# mg.set_watershed_boundary_condition(z, -9999)
+mg.set_watershed_boundary_condition_outlet_id(7544048, mg.at_node["topographic__elevation"])
+
 #mg.set_closed_boundaries_at_grid_edges(False, False, False, False) #set left and right closed, leave top and bottom open
 
 #plt.figure(1)
@@ -44,7 +48,7 @@ mg.set_watershed_boundary_condition(z, -9999)
 ### ------- parameters / initial conditions
 uplift_rate = 0.0001 #Marder et al, 2025 and Kainz et al 2023
 
-n_sp = 4/3 # Whipple et al state that n = 1 for plucking and n = 5/3 for abrasion dominated erosion,
+n_sp = 4/3. # Whipple et al state that n = 1 for plucking and n = 5/3 for abrasion dominated erosion,
            # therefore n is probably somewhere in between (Whipple et al., 2000, Whipple & Tucker, 2002, Tucker & Whipple 2002)
 theta = 0.27 #average of 0.31 for Turkey, 0.23 for St Charles found from 10m dem
 m_sp = theta * n_sp 
@@ -58,6 +62,9 @@ hillslope_diff = 0.005 #m2/year, from Pelletier et al., 2011; Langston et al., 2
 ld = LinearDiffuser(mg, linear_diffusivity = hillslope_diff)
 fa = FlowAccumulator(mg, flow_director = 'D8', depression_finder = DepressionFinderAndRouter(mg))
 fsc = FastscapeEroder(mg, K_sp = K_sp, m_sp = m_sp, n_sp = n_sp)
+#sf = SinkFiller(mg, routing = 'D8', apply_slope = True, fill_slope = 1e-6)
+
+#sf.run_one_step()
 
 print('finished component instantiate')
 
@@ -65,6 +72,7 @@ active_time = 0
 dt = 1000
 total_time = 1000
 
+start_loop_time = time.time()
 while active_time < total_time:
     z[mg.core_nodes] += uplift_rate*dt
     print('finished uplift')
@@ -102,7 +110,11 @@ while active_time < total_time:
          with open('WetsBig20Ma.asc', 'w') as f:
               esri_ascii.dump(mg, stream = f, at = 'node', name = 'topographic__elevation')
     
+    if active_time == 0:
+        dt_time = time.time() - start_loop_time
+        print("Time for one dt is %s" % dt_time)
     active_time += dt
-
-print('finished model')          
+    
+    
+print('finished model in %s' % (time.time()-start_time))          
 
