@@ -32,11 +32,11 @@ v 7. Make code for power law line to figure out m, n, and Ks (and refresh memory
 
 ##instantiate grid
 
-with open("S:\!!!!!LevSugermanBrozan\GY405_1\Python\Landlab\wets_30m_all_m_clip.asc") as fp:
+with open("basins_wets_30mbigclip.asc") as fp:
     mg = esri_ascii.load(fp, name = "topographic__elevation", at = "node")
 z = mg.field_values('topographic__elevation')
-#mg.set_watershed_boundary_condition(z, -9999)
-mg.set_closed_boundaries_at_grid_edges(False, False, False, False) #set left and right closed, leave top and bottom open
+mg.set_watershed_boundary_condition(z, -9999)
+#mg.set_closed_boundaries_at_grid_edges(False, False, False, False) #set left and right closed, leave top and bottom open
 
 #plt.figure(1)
 #mg.imshow(mg.status_at_node, color_for_closed = "blue")
@@ -63,13 +63,17 @@ print('finished component instantiate')
 
 active_time = 0
 dt = 1000
-total_time = 20e6
+total_time = 1000
 
 while active_time < total_time:
     z[mg.core_nodes] += uplift_rate*dt
+    print('finished uplift')
     ld.run_one_step(dt)
+    print('finished diffusivity')
     fa.run_one_step()
+    print('finished flow accumulate')
     fsc.run_one_step(dt)
+    print('finished erosion')
     
     # if active_time % 5e6 == 0:
     #     plt.figure(3)
@@ -79,7 +83,7 @@ while active_time < total_time:
     #     max_elev = np.max(z)
     #     print(f"Maximum elevation is {np.max(z)}")
         
-    if active_time%1e6==0:
+    if active_time%100==0:
         print('finished time %s' % active_time)
     
     if active_time == 5e6:
@@ -101,5 +105,4 @@ while active_time < total_time:
     active_time += dt
 
 print('finished model')          
-
 
