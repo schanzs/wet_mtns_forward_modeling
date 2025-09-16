@@ -30,15 +30,37 @@ v 6. Look up hillslope diffusivity
 v 7. Make code for power law line to figure out m, n, and Ks (and refresh memory on Gallen 2013 and Gallen 2018)
 
 """
+import sys, importlib
+
+# If 'os' is already shadowed, remove it
+if "os" in sys.modules:
+    del sys.modules["os"]
+
+# Explicitly import the stdlib os module
+os = importlib.import_module("os")
+
+import os
+
+# Limit threading to a single thread to avoid deadlocks / hangs
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+
+print("Using os from:", os.__file__)
+
 
 start_time = time.time()
 ##instantiate grid
 
-with open("Wets_30m_fill_basin2study2.asc") as fp:
+with open("S:\!!!!!LevSugermanBrozan\GY405_1\Python\Landlab\wets_30m_fill_basin2study2.asc") as fp:
     mg = esri_ascii.load(fp, name = "topographic__elevation", at = "node")
 z = mg.field_values('topographic__elevation')
-# mg.set_watershed_boundary_condition(z, -9999)
+#z = mg.at_node["topographic__elevation"].astype("float32", copy=False)
+#mg.set_watershed_boundary_condition(z, -9999)
 mg.set_watershed_boundary_condition_outlet_id(7544048, mg.at_node["topographic__elevation"])
+
 
 #mg.set_closed_boundaries_at_grid_edges(False, False, False, False) #set left and right closed, leave top and bottom open
 
@@ -91,7 +113,7 @@ while active_time < total_time:
     #     max_elev = np.max(z)
     #     print(f"Maximum elevation is {np.max(z)}")
         
-    if active_time%100==0:
+    if active_time%1000==0:
         print('finished time %s' % active_time)
     
     if active_time == 5e6:
@@ -117,4 +139,3 @@ while active_time < total_time:
     
     
 print('finished model in %s' % (time.time()-start_time))          
-
